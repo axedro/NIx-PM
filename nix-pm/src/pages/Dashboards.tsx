@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supersetService } from '../services/superset';
+import { Plus } from 'lucide-react';
 
 export function Dashboards() {
   const [dashboards, setDashboards] = useState<any[]>([]);
   const [selectedDashboard, setSelectedDashboard] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
 
   useEffect(() => {
     loadDashboards();
@@ -47,15 +49,30 @@ export function Dashboards() {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-        <h2 className="text-2xl font-semibold text-gray-900">Dashboards</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900">Dashboards</h2>
+          <button
+            onClick={() => {
+              setIsCreatingNew(true);
+              setSelectedDashboard(null);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Create New Dashboard
+          </button>
+        </div>
         {dashboards.length > 0 && (
           <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
             {dashboards.map((dashboard) => (
               <button
                 key={dashboard.id}
-                onClick={() => setSelectedDashboard(dashboard)}
+                onClick={() => {
+                  setSelectedDashboard(dashboard);
+                  setIsCreatingNew(false);
+                }}
                 className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
-                  selectedDashboard?.id === dashboard.id
+                  selectedDashboard?.id === dashboard.id && !isCreatingNew
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
@@ -67,7 +84,25 @@ export function Dashboards() {
         )}
       </div>
       <div className="flex-1 p-4 overflow-hidden">
-        {dashboards.length === 0 ? (
+        {isCreatingNew ? (
+          <div className="h-full flex flex-col bg-white rounded-lg shadow-lg overflow-hidden">
+            <div className="flex-1 relative overflow-hidden">
+              <iframe
+                key="new-dashboard"
+                src="http://localhost:8088/dashboard/new/"
+                className="absolute border-0"
+                style={{
+                  top: '-60px',
+                  left: 0,
+                  width: '100%',
+                  height: 'calc(100% + 60px)'
+                }}
+                title="Create New Dashboard"
+                allow="fullscreen"
+              />
+            </div>
+          </div>
+        ) : dashboards.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <p className="text-gray-600 mb-2">No dashboards available</p>
