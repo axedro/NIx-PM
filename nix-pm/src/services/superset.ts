@@ -133,6 +133,55 @@ class SupersetService {
     }
   }
 
+  async getDatasets(): Promise<any[]> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    try {
+      const response = await axios.get(`${SUPERSET_URL}/api/v1/dataset/`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      });
+
+      return response.data.result;
+    } catch (error) {
+      console.error('Failed to fetch datasets:', error);
+      throw error;
+    }
+  }
+
+  async createChart(chartData: {
+    slice_name: string;
+    viz_type: string;
+    datasource_id: number;
+    datasource_type: string;
+    params?: string;
+  }): Promise<any> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    try {
+      const response = await axios.post(
+        `${SUPERSET_URL}/api/v1/chart/`,
+        chartData,
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create chart:', error);
+      throw error;
+    }
+  }
+
   getAccessToken(): string | null {
     return this.accessToken;
   }

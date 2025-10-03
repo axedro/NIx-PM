@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { supersetService } from '../services/superset';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Plus } from 'lucide-react';
+import { CreateChartModal } from '../components/CreateChartModal';
 
 export function Charts() {
   const [charts, setCharts] = useState<any[]>([]);
   const [selectedChart, setSelectedChart] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadCharts();
@@ -29,6 +31,10 @@ export function Charts() {
     }
   };
 
+  const handleChartCreated = () => {
+    loadCharts();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -48,7 +54,16 @@ export function Charts() {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-        <h2 className="text-2xl font-semibold text-gray-900">Charts</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900">Charts</h2>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Create New Chart
+          </button>
+        </div>
         {charts.length > 0 && (
           <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
             {charts.map((chart) => (
@@ -111,6 +126,12 @@ export function Charts() {
           </div>
         ) : null}
       </div>
+
+      <CreateChartModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onChartCreated={handleChartCreated}
+      />
     </div>
   );
 }
