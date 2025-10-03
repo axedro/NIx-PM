@@ -146,22 +146,11 @@ export function Charts() {
                     Exit Edit Mode
                   </button>
                 ) : (
-                  <>
-                    <a
-                      href={`http://localhost:8088/explore/?slice_id=${selectedChart.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Open in Superset
-                    </a>
-                    <ActionsMenu
-                      onEdit={() => handleEditChart(selectedChart.id)}
-                      onDelete={() => handleDeleteChart(selectedChart.id)}
-                      onExport={() => handleExportChart(selectedChart.id)}
-                    />
-                  </>
+                  <ActionsMenu
+                    onEdit={() => handleEditChart(selectedChart.id)}
+                    onDelete={() => handleDeleteChart(selectedChart.id)}
+                    onExport={() => handleExportChart(selectedChart.id)}
+                  />
                 )}
               </div>
             </div>
