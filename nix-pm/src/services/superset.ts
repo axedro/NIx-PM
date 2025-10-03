@@ -15,6 +15,7 @@ export interface GuestToken {
 class SupersetService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private credentials: SupersetCredentials | null = null;
 
   async login(credentials: SupersetCredentials): Promise<void> {
     try {
@@ -27,10 +28,32 @@ class SupersetService {
 
       this.accessToken = response.data.access_token;
       this.refreshToken = response.data.refresh_token;
+      this.credentials = credentials; // Store credentials for session linking
+
+      // Store credentials in sessionStorage for persistence
+      sessionStorage.setItem('superset_credentials', JSON.stringify(credentials));
+      sessionStorage.setItem('superset_access_token', this.accessToken);
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
     }
+  }
+
+  // Restore session from sessionStorage
+  restoreSession(): boolean {
+    const storedToken = sessionStorage.getItem('superset_access_token');
+    const storedCreds = sessionStorage.getItem('superset_credentials');
+
+    if (storedToken && storedCreds) {
+      this.accessToken = storedToken;
+      this.credentials = JSON.parse(storedCreds);
+      return true;
+    }
+    return false;
+  }
+
+  getCredentials(): SupersetCredentials | null {
+    return this.credentials;
   }
 
   async getGuestToken(resources: { type: string; id: string }[]): Promise<string> {
@@ -121,6 +144,9 @@ class SupersetService {
   logout(): void {
     this.accessToken = null;
     this.refreshToken = null;
+    this.credentials = null;
+    sessionStorage.removeItem('superset_credentials');
+    sessionStorage.removeItem('superset_access_token');
   }
 }
 

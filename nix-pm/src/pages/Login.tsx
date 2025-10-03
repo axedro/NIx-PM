@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supersetService } from '../services/superset';
 
 export function Login() {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();

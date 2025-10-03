@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Menu, ChevronLeft, ChevronRight, LayoutDashboard, BarChart3 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Menu, ChevronLeft, ChevronRight, LayoutDashboard, BarChart3, User, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { supersetService } from '../services/superset';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboards', path: '/dashboards' },
@@ -16,6 +18,14 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    supersetService.logout();
+    navigate('/login');
+  };
+
+  const credentials = supersetService.getCredentials();
+  const username = credentials?.username || 'User';
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -27,6 +37,20 @@ export function Layout({ children }: LayoutProps) {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">Business Intelligence</span>
+          <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
+              <User className="w-4 h-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">{username}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          </div>
         </div>
       </nav>
 
