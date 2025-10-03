@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { supersetService } from '../services/superset';
 import { ExternalLink } from 'lucide-react';
+import { ActionsMenu } from '../components/ActionsMenu';
 
 export function Dashboards() {
   const [dashboards, setDashboards] = useState<any[]>([]);
   const [selectedDashboard, setSelectedDashboard] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     loadDashboards();
@@ -26,6 +28,36 @@ export function Dashboards() {
       console.error('Dashboard load error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditDashboard = (dashboardId: number) => {
+    setIsEditMode(true);
+  };
+
+  const handleDeleteDashboard = async (dashboardId: number) => {
+    if (!confirm('Are you sure you want to delete this dashboard?')) {
+      return;
+    }
+
+    try {
+      await supersetService.deleteDashboard(dashboardId);
+      loadDashboards();
+      if (selectedDashboard?.id === dashboardId) {
+        setSelectedDashboard(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete dashboard:', err);
+      alert('Failed to delete dashboard. Check console for details.');
+    }
+  };
+
+  const handleExportDashboard = async (dashboardId: number) => {
+    try {
+      await supersetService.exportDashboard(dashboardId);
+    } catch (err) {
+      console.error('Failed to export dashboard:', err);
+      alert('Failed to export dashboard. Check console for details.');
     }
   };
 
@@ -84,22 +116,45 @@ export function Dashboards() {
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   NIx PM Analytics Dashboard
+                  {isEditMode && <span className="ml-2 text-blue-600 font-medium">• Edit Mode</span>}
                 </p>
               </div>
-              <a
-                href={`http://localhost:8088/superset/dashboard/${selectedDashboard.id}/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open in Superset
-              </a>
+              <div className="flex items-center gap-2">
+                {isEditMode ? (
+                  <button
+                    onClick={() => setIsEditMode(false)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                  >
+                    Exit Edit Mode
+                  </button>
+                ) : (
+                  <>
+                    <a
+                      href={`http://localhost:8088/superset/dashboard/${selectedDashboard.id}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Open in Superset
+                    </a>
+                    <ActionsMenu
+                      onEdit={() => handleEditDashboard(selectedDashboard.id)}
+                      onDelete={() => handleDeleteDashboard(selectedDashboard.id)}
+                      onExport={() => handleExportDashboard(selectedDashboard.id)}
+                    />
+                  </>
+                )}
+              </div>
             </div>
             <div className="flex-1 relative overflow-hidden">
               <iframe
-                key={selectedDashboard.id}
-                src={`http://localhost:8088/superset/dashboard/${selectedDashboard.id}/?standalone=true`}
+                key={`${selectedDashboard.id}-${isEditMode ? 'edit' : 'view'}`}
+                src={
+                  isEditMode
+                    ? `http://localhost:8088/superset/dashboard/${selectedDashboard.id}/`
+                    : `http://localhost:8088/superset/dashboard/${selectedDashboard.id}/?standalone=true`
+                }
                 className="absolute border-0"
                 style={{
                   top: '-60px',

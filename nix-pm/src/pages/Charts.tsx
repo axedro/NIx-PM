@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supersetService } from '../services/superset';
 import { ExternalLink, Plus } from 'lucide-react';
 import { CreateChartModal } from '../components/CreateChartModal';
+import { ActionsMenu } from '../components/ActionsMenu';
 
 export function Charts() {
   const [charts, setCharts] = useState<any[]>([]);
@@ -9,6 +10,7 @@ export function Charts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     loadCharts();
@@ -33,6 +35,36 @@ export function Charts() {
 
   const handleChartCreated = () => {
     loadCharts();
+  };
+
+  const handleEditChart = (chartId: number) => {
+    setIsEditMode(true);
+  };
+
+  const handleDeleteChart = async (chartId: number) => {
+    if (!confirm('Are you sure you want to delete this chart?')) {
+      return;
+    }
+
+    try {
+      await supersetService.deleteChart(chartId);
+      loadCharts();
+      if (selectedChart?.id === chartId) {
+        setSelectedChart(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete chart:', err);
+      alert('Failed to delete chart. Check console for details.');
+    }
+  };
+
+  const handleExportChart = async (chartId: number) => {
+    try {
+      await supersetService.exportChart(chartId);
+    } catch (err) {
+      console.error('Failed to export chart:', err);
+      alert('Failed to export chart. Check console for details.');
+    }
   };
 
   if (loading) {
@@ -102,23 +134,61 @@ export function Charts() {
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   Type: {selectedChart.viz_type || 'Unknown'} • NIx PM Analytics
+                  {isEditMode && <span className="ml-2 text-blue-600 font-medium">• Edit Mode</span>}
                 </p>
               </div>
-              <a
-                href={`http://localhost:8088/explore/?slice_id=${selectedChart.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open in Superset
-              </a>
+              <div className="flex items-center gap-2">
+                {isEditMode ? (
+                  <button
+                    onClick={() => setIsEditMode(false)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                  >
+                    Exit Edit Mode
+                  </button>
+                ) : (
+                  <>
+                    <a
+                      href={`http://localhost:8088/explore/?slice_id=${selectedChart.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Open in Superset
+                    </a>
+                    <ActionsMenu
+                      onEdit={() => handleEditChart(selectedChart.id)}
+                      onDelete={() => handleDeleteChart(selectedChart.id)}
+                      onExport={() => handleExportChart(selectedChart.id)}
+                    />
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex-1 relative bg-gray-50">
+            <div className="flex-1 relative bg-gray-50 overflow-hidden">
               <iframe
-                key={selectedChart.id}
-                src={`http://localhost:8088/explore/?form_data=%7B%22slice_id%22%3A${selectedChart.id}%7D&standalone=3`}
-                className="absolute inset-0 w-full h-full border-0"
+                key={`${selectedChart.id}-${isEditMode ? 'edit' : 'view'}`}
+                src={
+                  isEditMode
+                    ? `http://localhost:8088/explore/?slice_id=${selectedChart.id}`
+                    : `http://localhost:8088/explore/?form_data=%7B%22slice_id%22%3A${selectedChart.id}%7D&standalone=3`
+                }
+                className="absolute border-0"
+                style={
+                  isEditMode
+                    ? {
+                        top: '-60px',
+                        left: 0,
+                        width: '100%',
+                        height: 'calc(100% + 60px)'
+                      }
+                    : {
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%'
+                      }
+                }
                 title={selectedChart.slice_name}
                 allow="fullscreen"
               />

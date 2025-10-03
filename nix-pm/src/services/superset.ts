@@ -182,6 +182,102 @@ class SupersetService {
     }
   }
 
+  async deleteChart(chartId: number): Promise<void> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    try {
+      await axios.delete(`${SUPERSET_URL}/api/v1/chart/${chartId}`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to delete chart:', error);
+      throw error;
+    }
+  }
+
+  async exportChart(chartId: number): Promise<void> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    try {
+      const response = await axios.get(
+        `${SUPERSET_URL}/api/v1/chart/export/?q=![${chartId}]`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+          responseType: 'blob',
+        }
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `chart_${chartId}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export chart:', error);
+      throw error;
+    }
+  }
+
+  async deleteDashboard(dashboardId: number): Promise<void> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    try {
+      await axios.delete(`${SUPERSET_URL}/api/v1/dashboard/${dashboardId}`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to delete dashboard:', error);
+      throw error;
+    }
+  }
+
+  async exportDashboard(dashboardId: number): Promise<void> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    try {
+      const response = await axios.get(
+        `${SUPERSET_URL}/api/v1/dashboard/export/?q=![${dashboardId}]`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+          responseType: 'blob',
+        }
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `dashboard_${dashboardId}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export dashboard:', error);
+      throw error;
+    }
+  }
+
   getAccessToken(): string | null {
     return this.accessToken;
   }
