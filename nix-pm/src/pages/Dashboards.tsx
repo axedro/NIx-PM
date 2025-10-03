@@ -96,11 +96,17 @@ export function Dashboards() {
                 Open in Superset
               </a>
             </div>
-            <div className="flex-1 relative">
+            <div className="flex-1 relative overflow-hidden">
               <iframe
                 key={selectedDashboard.id}
-                src={`http://localhost:8088/superset/dashboard/${selectedDashboard.id}/?standalone=3`}
-                className="absolute inset-0 w-full h-full border-0"
+                src={`http://localhost:8088/superset/dashboard/${selectedDashboard.id}/?standalone=true`}
+                className="absolute border-0"
+                style={{
+                  top: '-60px',
+                  left: 0,
+                  width: '100%',
+                  height: 'calc(100% + 60px)'
+                }}
                 title={selectedDashboard.dashboard_title}
                 allow="fullscreen"
               />
