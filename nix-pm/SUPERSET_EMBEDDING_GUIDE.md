@@ -60,6 +60,33 @@ WTF_CSRF_EXEMPT_LIST = [".*"]
 
 # Enable embedded routes
 PREVENT_UNSAFE_DEFAULT_URLS_ON_DATASET = False
+
+# Hide Superset branding in embedded mode
+LOGO_TARGET_PATH = None
+LOGO_TOOLTIP = "NIx PM"
+LOGO_RIGHT_TEXT = ""
+
+# Custom CSS to hide navigation in embedded views
+CUSTOM_CSS = """
+/* Hide header in standalone mode */
+body.standalone header.top,
+body.standalone .ant-layout-header,
+body.standalone nav[role="navigation"] {
+  display: none !important;
+}
+
+/* Hide Superset logo and branding */
+body.standalone .superset-logo,
+body.standalone a[href="/superset/welcome/"] {
+  display: none !important;
+}
+
+/* Adjust main content area when header is hidden */
+body.standalone main {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+"""
 ```
 
 ### 2. Docker Configuration
@@ -143,6 +170,7 @@ export interface SupersetCredentials {
 class SupersetService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private credentials: SupersetCredentials | null = null;
 
   async login(credentials: SupersetCredentials): Promise<void> {
     const response = await axios.post(`${SUPERSET_URL}/api/v1/security/login`, {
@@ -154,6 +182,24 @@ class SupersetService {
 
     this.accessToken = response.data.access_token;
     this.refreshToken = response.data.refresh_token;
+    this.credentials = credentials;
+
+    // Store credentials in sessionStorage for persistence
+    sessionStorage.setItem('superset_credentials', JSON.stringify(credentials));
+    sessionStorage.setItem('superset_access_token', this.accessToken);
+  }
+
+  // Restore session from sessionStorage
+  restoreSession(): boolean {
+    const storedToken = sessionStorage.getItem('superset_access_token');
+    const storedCreds = sessionStorage.getItem('superset_credentials');
+
+    if (storedToken && storedCreds) {
+      this.accessToken = storedToken;
+      this.credentials = JSON.parse(storedCreds);
+      return true;
+    }
+    return false;
   }
 
   async getGuestToken(resources: { type: string; id: string }[]): Promise<string> {
@@ -188,7 +234,93 @@ class SupersetService {
       throw new Error('Not authenticated. Please login first.');
     }
 
-    const response = await axios.get(`${SUPERSET_URL}/api/v1/dashboard/`, {
+    // Paginated fetch to get all dashboards (100+ items)
+    let allDashboards: any[] = [];
+    let page = 0;
+    const pageSize = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await axios.get(`${SUPERSET_URL}/api/v1/dashboard/`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+        params: {
+          q: JSON.stringify({
+            page: page,
+            page_size: pageSize
+          })
+        }
+      });
+
+      const results = response.data.result || [];
+      allDashboards = allDashboards.concat(results);
+      hasMore = results.length === pageSize;
+      page++;
+    }
+
+    return allDashboards;
+  }
+
+  async getCharts(): Promise<any[]> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    // Paginated fetch to get all charts (100+ items)
+    let allCharts: any[] = [];
+    let page = 0;
+    const pageSize = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await axios.get(`${SUPERSET_URL}/api/v1/chart/`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+        params: {
+          q: JSON.stringify({
+            page: page,
+            page_size: pageSize
+          })
+        }
+      });
+
+      const results = response.data.result || [];
+      allCharts = allCharts.concat(results);
+      hasMore = results.length === pageSize;
+      page++;
+    }
+
+    return allCharts;
+  }
+
+  async getDatasets(): Promise<any[]> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    const response = await axios.get(`${SUPERSET_URL}/api/v1/dataset/`, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      params: {
+        q: JSON.stringify({
+          page: 0,
+          page_size: 100
+        })
+      }
+    });
+
+    return response.data.result || [];
+  }
+
+  async getDatasetDetails(datasetId: number): Promise<any> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    const response = await axios.get(`${SUPERSET_URL}/api/v1/dataset/${datasetId}`, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
       },
@@ -197,18 +329,47 @@ class SupersetService {
     return response.data.result;
   }
 
-  async getCharts(): Promise<any[]> {
+  async createChart(chartData: any): Promise<any> {
     if (!this.accessToken) {
       throw new Error('Not authenticated. Please login first.');
     }
 
-    const response = await axios.get(`${SUPERSET_URL}/api/v1/chart/`, {
+    const response = await axios.post(
+      `${SUPERSET_URL}/api/v1/chart/`,
+      chartData,
+      {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return response.data;
+  }
+
+  async deleteChart(chartId: number): Promise<void> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    await axios.delete(`${SUPERSET_URL}/api/v1/chart/${chartId}`, {
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
       },
     });
+  }
 
-    return response.data.result;
+  async deleteDashboard(dashboardId: number): Promise<void> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    await axios.delete(`${SUPERSET_URL}/api/v1/dashboard/${dashboardId}`, {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
   }
 
   isAuthenticated(): boolean {
@@ -218,6 +379,9 @@ class SupersetService {
   logout(): void {
     this.accessToken = null;
     this.refreshToken = null;
+    this.credentials = null;
+    sessionStorage.removeItem('superset_credentials');
+    sessionStorage.removeItem('superset_access_token');
   }
 }
 
@@ -426,16 +590,148 @@ NIx PM uses **Method 2 (Direct iframe Embedding)** because:
 5. ✅ Whitelabeled with "NIx PM" branding
 6. ✅ Professional UI with custom styling
 
+### Key Features
+
+1. **Dashboard Management**
+   - List all dashboards with pagination (100+ items)
+   - View dashboards in standalone mode (`standalone=3`)
+   - Delete dashboards
+   - Export dashboards as ZIP files
+   - Create new dashboards inline
+
+2. **Chart Management**
+   - List all charts with pagination (100+ items)
+   - View charts in explore mode
+   - Delete charts
+   - Export charts as ZIP files
+   - Create charts via semantic layer
+
+3. **Semantic Layer Chart Creation**
+   - Business user-friendly interface
+   - KPI selection from organized categories
+   - Chart type selection with descriptions
+   - Time granularity configuration (15m, 1h, daily)
+   - Time range configuration (today, last week, etc.)
+   - Auto-detection of temporal columns
+   - Direct navigation to Superset explore with pre-configured form_data
+
+4. **Session Persistence**
+   - Credentials stored in sessionStorage
+   - Auto-restore session on page reload
+   - Seamless user experience
+
+5. **API Pagination**
+   - Automatic pagination for large datasets
+   - Fetches all items across multiple pages
+   - Works with 100+ charts and dashboards
+
+## Chart Creation with Semantic Layer
+
+NIx PM includes a semantic layer that defines KPIs and chart types, enabling business users to create charts without technical knowledge.
+
+### Semantic Layer Structure (`semantic.json`)
+
+```json
+{
+  "categories": [
+    {
+      "category": "Revenue",
+      "kpi": [
+        {
+          "name": "total_revenue",
+          "description": "Total revenue generated",
+          "dataset": "sales_data"
+        }
+      ]
+    }
+  ],
+  "chart_types": [
+    {
+      "id": "line",
+      "name": "Line Chart",
+      "category": "Evolution",
+      "description": "Show trends over time"
+    }
+  ]
+}
+```
+
+### Chart Creation Workflow
+
+1. **User selects configuration**:
+   - Time granularity (15 minutes, 1 hour, daily)
+   - Time range (none, today, last 7 days, etc.)
+
+2. **User selects KPIs** from semantic layer categories
+
+3. **User selects chart type** from categorized options
+
+4. **System builds form_data**:
+   ```typescript
+   const formData = {
+     datasource: `${datasetId}__table`,
+     viz_type: 'echarts_timeseries_line',
+     granularity_sqla: 'timestamp',
+     time_range: 'Last week',
+     time_grain_sqla: 'P1D',
+     metrics: [
+       {
+         expressionType: 'SQL',
+         sqlExpression: 'SUM(total_revenue)',
+         label: 'total_revenue',
+         optionName: 'metric_total_revenue_0'
+       }
+     ],
+     adhoc_filters: []
+   };
+   ```
+
+5. **Navigate to Superset explore**:
+   ```typescript
+   const formDataEncoded = encodeURIComponent(JSON.stringify(formData));
+   const exploreUrl = `http://localhost:8088/superset/explore/?datasource_type=table&datasource_id=${datasetId}&form_data=${formDataEncoded}`;
+   ```
+
+6. **User configures and saves** chart in Superset
+
+### Chart Type Mapping
+
+Semantic layer uses simplified IDs that map to Superset's viz_type:
+
+```typescript
+const vizTypeMapping: Record<string, string> = {
+  'line': 'echarts_timeseries_line',
+  'area': 'echarts_area',
+  'bar': 'echarts_timeseries_bar',
+  'pie': 'pie',
+  'table': 'table',
+  // ... more mappings
+};
+```
+
+### Time Granularity ISO 8601 Format
+
+- `PT15M` - 15 minutes
+- `PT1H` - 1 hour
+- `P1D` - Daily
+- `P1W` - Weekly
+- `P1M` - Monthly
+
 ## API Endpoints Used
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/v1/security/login` | POST | Authenticate user and get access token |
 | `/api/v1/security/guest_token/` | POST | Generate guest token for embedding |
-| `/api/v1/dashboard/` | GET | List all dashboards |
-| `/api/v1/chart/` | GET | List all charts |
+| `/api/v1/dashboard/` | GET | List all dashboards (paginated) |
+| `/api/v1/chart/` | GET | List all charts (paginated) |
+| `/api/v1/dataset/` | GET | List all datasets |
+| `/api/v1/dataset/{id}` | GET | Get dataset details including columns |
+| `/api/v1/chart/` | POST | Create new chart |
+| `/api/v1/chart/{id}` | DELETE | Delete chart |
+| `/api/v1/dashboard/{id}` | DELETE | Delete dashboard |
 | `/superset/dashboard/{id}/` | GET | View dashboard (in iframe) |
-| `/explore/` | GET | View chart (in iframe) |
+| `/superset/explore/` | GET | View/create chart (in iframe) |
 
 ## Testing the Configuration
 
