@@ -57,9 +57,10 @@ export async function createAlert(data: CreateAlertDto): Promise<Alert> {
       dataset_name,
       alert_type,
       enabled,
+      check_frequency,
       config,
       created_by
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING *
   `;
 
@@ -70,6 +71,7 @@ export async function createAlert(data: CreateAlertDto): Promise<Alert> {
     data.dataset_name,
     data.alert_type,
     data.enabled,
+    data.check_frequency,
     JSON.stringify(data.config),
     data.created_by || null,
   ]);
@@ -112,6 +114,11 @@ export async function updateAlert(
   if (data.enabled !== undefined) {
     updates.push(`enabled = $${paramCount++}`);
     values.push(data.enabled);
+  }
+
+  if (data.check_frequency !== undefined) {
+    updates.push(`check_frequency = $${paramCount++}`);
+    values.push(data.check_frequency);
   }
 
   if (data.config !== undefined) {

@@ -14,6 +14,8 @@ async function runMigrations() {
         dataset_name VARCHAR(255) NOT NULL,
         alert_type VARCHAR(50) NOT NULL CHECK (alert_type IN ('threshold', 'anomaly')),
         enabled BOOLEAN DEFAULT true,
+        check_frequency VARCHAR(10) DEFAULT '5min',
+        last_checked_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_by VARCHAR(255),

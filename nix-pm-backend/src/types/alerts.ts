@@ -5,6 +5,7 @@ export type AlertType = 'threshold' | 'anomaly';
 export type ComparisonOperator = 'greater_than' | 'less_than' | 'between';
 export type AggregationMethod = 'avg' | 'sum' | 'max' | 'min';
 export type TimeWindow = '15min' | '1hour' | '1day' | '1week';
+export type CheckFrequency = '5min' | '15min' | '30min' | '1hour' | '6hour' | '12hour' | '1day';
 
 // Threshold alert configuration schema
 export const ThresholdConfigSchema = z.object({
@@ -26,6 +27,7 @@ export const CreateAlertSchema = z.object({
   dataset_name: z.string().min(1),
   alert_type: z.enum(['threshold', 'anomaly']),
   enabled: z.boolean().default(true),
+  check_frequency: z.enum(['5min', '15min', '30min', '1hour', '6hour', '12hour', '1day']).default('5min'),
   config: z.union([ThresholdConfigSchema, z.object({})]),
   created_by: z.string().optional(),
 });
@@ -41,6 +43,8 @@ export interface Alert {
   dataset_name: string;
   alert_type: AlertType;
   enabled: boolean;
+  check_frequency: CheckFrequency;
+  last_checked_at?: Date;
   created_at: Date;
   updated_at: Date;
   created_by?: string;

@@ -6,14 +6,55 @@ import { Alert } from '../types/alerts';
 let schedulerTask: cron.ScheduledTask | null = null;
 
 /**
+ * Check if alert should be evaluated based on its check_frequency
+ */
+function shouldCheckAlert(alert: Alert): boolean {
+  if (!alert.last_checked_at) return true;
+
+  const frequencyMinutes: Record<string, number> = {
+    '5min': 5,
+    '15min': 15,
+    '30min': 30,
+    '1hour': 60,
+    '6hour': 360,
+    '12hour': 720,
+    '1day': 1440,
+  };
+
+  const minutes = frequencyMinutes[alert.check_frequency] || 5;
+  const lastCheck = new Date(alert.last_checked_at).getTime();
+  const now = Date.now();
+  const elapsed = (now - lastCheck) / 1000 / 60; // minutes
+
+  return elapsed >= minutes;
+}
+
+/**
+ * Update last_checked_at timestamp for alert
+ */
+async function updateLastChecked(alertId: number): Promise<void> {
+  const { queryDatabase } = await import('../config/database');
+  await queryDatabase('UPDATE alerts SET last_checked_at = NOW() WHERE id = $1', [alertId]);
+}
+
+/**
  * Evaluate a single alert
  */
 async function evaluateAlert(alert: Alert): Promise<void> {
   try {
-    console.log(`Evaluating alert: ${alert.name} (ID: ${alert.id})`);
+    // Check if enough time has passed since last check
+    if (!shouldCheckAlert(alert)) {
+      console.log(`⏭ Skipping alert ${alert.name} (checked recently, frequency: ${alert.check_frequency})`);
+      return;
+    }
+
+    console.log(`Evaluating alert: ${alert.name} (ID: ${alert.id}, frequency: ${alert.check_frequency})`);
 
     if (alert.alert_type === 'threshold') {
       const result = await evaluateThresholdAlert(alert);
+
+      // Update last checked timestamp
+      await updateLastChecked(alert.id);
 
       if (result.triggered) {
         console.log(`🚨 ALERT TRIGGERED: ${alert.name}`);
