@@ -170,3 +170,27 @@ export async function getAlertStatistics(
   const rows = await queryDatabase<AlertStatistics>(query, [alertId]);
   return rows.length > 0 ? rows[0] : null;
 }
+
+/**
+ * Get KPI timeseries data
+ */
+export async function getKPITimeseries(
+  kpiName: string,
+  datasetName: string,
+  limit: number = 100
+): Promise<Array<{ timestamp: Date; value: number }>> {
+  const query = `
+    SELECT
+      timestamp,
+      "${kpiName}" as value
+    FROM ${datasetName}
+    WHERE "${kpiName}" IS NOT NULL
+    ORDER BY timestamp DESC
+    LIMIT $1
+  `;
+
+  const rows = await queryDatabase<{ timestamp: Date; value: number }>(query, [limit]);
+
+  // Return in chronological order for the chart
+  return rows.reverse();
+}
