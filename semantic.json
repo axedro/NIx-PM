@@ -1,0 +1,98 @@
+[
+    {
+    "category": "Accessibility",
+    "kpi": [
+    {
+    "name": "erab_est_success_rate_all_qci",
+    "description": "Success rate of E-RAB establishment attempts across all QCIs.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "s1_success_rate_all_qci",
+    "description": "Success rate of S1 interface setup procedures across all QCIs.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "rrc_est_success_rate_all_qci",
+    "description": "Success rate of RRC connection establishment attempts across all QCIs.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "erab_accessibility_all_qci",
+    "description": "Probability that an E-RAB can be successfully established for all QCIs.",
+    "dataset": "kpi_state_day"
+    }
+    ]
+    },
+    {
+    "category": "Retainability",
+    "kpi": [
+    {
+    "name": "erab_drop_call_rate_all_qci",
+    "description": "Percentage of dropped E-RAB connections across all QCIs.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "cell_availability",
+    "description": "Percentage of time the cell is available for service.",
+    "dataset": "kpi_state_day"
+    }
+    ]
+    },
+    {
+    "category": "Radio_Quality",
+    "kpi": [
+    {
+    "name": "rssi",
+    "description": "Received Signal Strength Indicator, measuring the power level of received signals.",
+    "dataset": "kpi_state_day"
+    }
+    ]
+    },
+    {
+    "category": "Mobility",
+    "kpi": [
+    {
+    "name": "intra_lte_ho_exe_success_rate",
+    "description": "Execution success rate of intra-LTE handovers.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "intra_lte_ho_success_rate",
+    "description": "Overall success rate of intra-LTE handovers.",
+    "dataset": "kpi_state_day"
+    }
+    ]
+    },
+    {
+    "category": "Capacity_Throughput",
+    "kpi": [
+    {
+    "name": "pdcp_sdu_dl_throughput",
+    "description": "Average downlink throughput measured at the PDCP layer.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "pdcp_sdu_ul_throughput",
+    "description": "Average uplink throughput measured at the PDCP layer.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "pdcp_sdu_dl_throughput_cell",
+    "description": "Cell-level downlink throughput at the PDCP layer.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "dl_pdcp_sdu_traffic_all_qci",
+    "description": "Total downlink PDCP traffic across all QCIs.",
+    "dataset": "kpi_state_day"
+    },
+    {
+    "name": "ul_pdcp_sdu_traffic_all_qci",
+    "description": "Total uplink PDCP traffic across all QCIs.",
+    "dataset": "kpi_state_day"
+    }
+    ]
+    }
+    ]
+    

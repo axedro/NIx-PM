@@ -139,15 +139,43 @@ class SupersetService {
     }
 
     try {
+      // Add pagination params to get all datasets
       const response = await axios.get(`${SUPERSET_URL}/api/v1/dataset/`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+        params: {
+          q: JSON.stringify({
+            page: 0,
+            page_size: 100
+          })
+        }
+      });
+
+      console.log('Datasets response:', response.data);
+      return response.data.result || [];
+    } catch (error) {
+      console.error('Failed to fetch datasets:', error);
+      throw error;
+    }
+  }
+
+  async getDatasetDetails(datasetId: number): Promise<any> {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated. Please login first.');
+    }
+
+    try {
+      const response = await axios.get(`${SUPERSET_URL}/api/v1/dataset/${datasetId}`, {
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
         },
       });
 
+      console.log('Dataset details response:', response.data);
       return response.data.result;
     } catch (error) {
-      console.error('Failed to fetch datasets:', error);
+      console.error('Failed to fetch dataset details:', error);
       throw error;
     }
   }

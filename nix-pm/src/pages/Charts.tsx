@@ -1,15 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supersetService } from '../services/superset';
 import { Plus, ArrowLeft, MoreVertical, Star, ChevronLeft, ChevronRight } from 'lucide-react';
-import { CreateChartModal } from '../components/CreateChartModal';
 import { ActionsMenu } from '../components/ActionsMenu';
 
 export function Charts() {
+  const navigate = useNavigate();
   const [charts, setCharts] = useState<any[]>([]);
   const [selectedChart, setSelectedChart] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [vizTypeFilter, setVizTypeFilter] = useState<string>('all');
@@ -35,9 +35,6 @@ export function Charts() {
     }
   };
 
-  const handleChartCreated = () => {
-    loadCharts();
-  };
 
   const handleEditChart = (chartId: number) => {
     setIsEditMode(true);
@@ -214,7 +211,7 @@ export function Charts() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold text-gray-900">Charts</h2>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => navigate('/charts/create')}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
@@ -354,12 +351,6 @@ export function Charts() {
           </>
         )}
       </div>
-
-      <CreateChartModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onChartCreated={handleChartCreated}
-      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Dashboards } from './pages/Dashboards';
 import { Charts } from './pages/Charts';
+import { CreateChart } from './pages/CreateChart';
 import { supersetService } from './services/superset';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -32,6 +33,7 @@ function App() {
                   <Route path="/" element={<Navigate to="/dashboards" replace />} />
                   <Route path="/dashboards" element={<Dashboards />} />
                   <Route path="/charts" element={<Charts />} />
+                  <Route path="/charts/create" element={<CreateChart />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>
