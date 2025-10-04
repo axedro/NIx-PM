@@ -101,13 +101,36 @@ class SupersetService {
     }
 
     try {
-      const response = await axios.get(`${SUPERSET_URL}/api/v1/dashboard/`, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-        },
-      });
+      let allDashboards: any[] = [];
+      let page = 0;
+      const pageSize = 100;
+      let hasMore = true;
 
-      return response.data.result;
+      while (hasMore) {
+        const response = await axios.get(`${SUPERSET_URL}/api/v1/dashboard/`, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+          params: {
+            q: JSON.stringify({
+              page: page,
+              page_size: pageSize
+            })
+          }
+        });
+
+        const results = response.data.result || [];
+        allDashboards = allDashboards.concat(results);
+
+        // Check if there are more pages
+        hasMore = results.length === pageSize;
+        page++;
+
+        console.log(`Fetched page ${page}, got ${results.length} dashboards, total: ${allDashboards.length}`);
+      }
+
+      console.log(`Total dashboards fetched: ${allDashboards.length}`);
+      return allDashboards;
     } catch (error) {
       console.error('Failed to fetch dashboards:', error);
       throw error;
@@ -120,13 +143,36 @@ class SupersetService {
     }
 
     try {
-      const response = await axios.get(`${SUPERSET_URL}/api/v1/chart/`, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-        },
-      });
+      let allCharts: any[] = [];
+      let page = 0;
+      const pageSize = 100;
+      let hasMore = true;
 
-      return response.data.result;
+      while (hasMore) {
+        const response = await axios.get(`${SUPERSET_URL}/api/v1/chart/`, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+          params: {
+            q: JSON.stringify({
+              page: page,
+              page_size: pageSize
+            })
+          }
+        });
+
+        const results = response.data.result || [];
+        allCharts = allCharts.concat(results);
+
+        // Check if there are more pages
+        hasMore = results.length === pageSize;
+        page++;
+
+        console.log(`Fetched page ${page}, got ${results.length} charts, total: ${allCharts.length}`);
+      }
+
+      console.log(`Total charts fetched: ${allCharts.length}`);
+      return allCharts;
     } catch (error) {
       console.error('Failed to fetch charts:', error);
       throw error;
