@@ -19,7 +19,6 @@ interface ChartType {
 
 export function CreateChart() {
   const navigate = useNavigate();
-  const [chartName, setChartName] = useState('');
   const [selectedKPIs, setSelectedKPIs] = useState<Set<string>>(new Set());
   const [selectedChartType, setSelectedChartType] = useState<ChartType | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,7 +27,8 @@ export function CreateChart() {
   const [expandedChartCategories, setExpandedChartCategories] = useState<Set<string>>(new Set(['Evolution']));
   const [categories, setCategories] = useState<any[]>([]);
   const [chartTypesByCategory, setChartTypesByCategory] = useState<Record<string, ChartType[]>>({});
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [timeGrain, setTimeGrain] = useState('P1D'); // Default: daily
+  const [timeRange, setTimeRange] = useState('No filter'); // Default: no filter
 
   useEffect(() => {
     loadSemanticLayer();
@@ -79,19 +79,7 @@ export function CreateChart() {
     setSelectedKPIs(newSelected);
   };
 
-  const handlePreview = () => {
-    if (!selectedChartType || selectedKPIs.size === 0) {
-      setError('Please select at least one KPI and a chart type');
-      return;
-    }
-
-    // Generate preview URL (for now, just a placeholder)
-    const kpiList = Array.from(selectedKPIs).join(', ');
-    setPreviewUrl(`Preview: ${kpiList} as ${selectedChartType.name}`);
-    setError(null);
-  };
-
-  const handleSubmit = async () => {
+  const handlePreview = async () => {
     if (selectedKPIs.size === 0) {
       setError('Please select at least one KPI');
       return;
@@ -152,73 +140,73 @@ export function CreateChart() {
       console.log('Time column:', timeColumn);
       console.log('Selected KPIs:', Array.from(selectedKPIs));
 
-      // Build metrics array using selected KPI names
-      const metrics = Array.from(selectedKPIs);
-
-      // Build proper metrics in adhoc format
-      const adhocMetrics = metrics.map(metricName => ({
-        expressionType: 'SIMPLE',
-        column: {
-          column_name: metricName,
-          type: 'DOUBLE'
-        },
-        aggregate: 'AVG',
-        label: metricName,
-        optionName: `metric_${metricName}`
-      }));
-
-      // Simplified params that Superset expects
-      const params: any = {
-        datasource: `${datasetObj.id}__table`,
-        viz_type: selectedChartType.id,
-        metrics: adhocMetrics,
-        adhoc_filters: [],
-        row_limit: 10000,
+      // Map chart types to Superset's expected viz_type values
+      const vizTypeMapping: Record<string, string> = {
+        'line': 'echarts_timeseries_line',
+        'area': 'echarts_area',
+        'smooth_line': 'echarts_timeseries_smooth',
+        'stepped_line': 'echarts_timeseries_step',
+        'bar': 'echarts_timeseries_bar',
+        'dist_bar': 'dist_bar',
+        'column': 'echarts_timeseries_bar',
+        'mixed_timeseries': 'mixed_timeseries',
+        'pie': 'pie',
+        'donut': 'pie',
+        'table': 'table',
+        'pivot_table': 'pivot_table_v2',
+        'big_number': 'big_number',
+        'big_number_total': 'big_number_total',
+        'histogram': 'histogram',
+        'box_plot': 'box_plot',
+        'treemap': 'treemap_v2',
+        'sunburst': 'sunburst_v2',
+        'world_map': 'world_map',
+        'country_map': 'country_map',
+        'time_table': 'time_table'
       };
 
-      // Add time-related params if time column exists
-      if (timeColumn) {
-        params.granularity_sqla = timeColumn;
-        params.time_range = 'No filter';
-        params.time_grain_sqla = 'P1D';
+      const vizType = vizTypeMapping[selectedChartType.id] || selectedChartType.id;
+      console.log('Chart type mapping:', selectedChartType.id, '->', vizType);
 
-        // For line/area charts, add x_axis
-        const timeSeriesCharts = ['line', 'area', 'smooth_line', 'stepped_line', 'mixed_timeseries'];
-        if (timeSeriesCharts.includes(selectedChartType.id)) {
-          params.x_axis = timeColumn;
-          params.x_axis_time_format = 'smart_date';
-          params.line_interpolation = 'linear';
-          params.show_legend = true;
-          params.rich_tooltip = true;
-          params.show_markers = false;
+      // Build metrics array using SQL expression type
+      const metrics = Array.from(selectedKPIs).map((kpiName, index) => ({
+        expressionType: 'SQL',
+        sqlExpression: `SUM(${kpiName})`,
+        label: kpiName,
+        optionName: `metric_${kpiName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${index}`
+      }));
+
+      // Build minimal form_data - don't include columns array to let Superset load them
+      // Use user-selected time grain and range
+      const formData = {
+        datasource: `${datasetObj.id}__table`,
+        viz_type: vizType,
+        granularity_sqla: timeColumn || 'timestamp',
+        time_range: timeRange,
+        time_grain_sqla: timeGrain,
+        metrics: metrics,
+        adhoc_filters: []
+      };
+
+      console.log('Form data for Superset:', formData);
+
+      // Use the new endpoint format with datasource parameters
+      const formDataEncoded = encodeURIComponent(JSON.stringify(formData));
+      const exploreUrl = `http://localhost:8088/superset/explore/?datasource_type=table&datasource_id=${datasetObj.id}&form_data=${formDataEncoded}`;
+
+      console.log('Opening Superset with form_data:', formData);
+      console.log('Explore URL:', exploreUrl);
+      console.log('Form data JSON:', JSON.stringify(formData));
+
+      // Navigate to a chart creation view with the iframe
+      navigate('/charts/create-superset', {
+        state: {
+          exploreUrl,
+          kpis: Array.from(selectedKPIs),
+          chartType: selectedChartType.name,
+          timeColumn: timeColumn
         }
-      } else {
-        // If no time column, set a default time range
-        params.time_range = 'No filter';
-      }
-
-      console.log('Chart params:', params);
-      console.log('Chart params stringified:', JSON.stringify(params, null, 2));
-
-      // Create the chart
-      const response = await supersetService.createChart({
-        slice_name: chartName || `${selectedChartType.name} - ${Array.from(selectedKPIs).join(', ')}`,
-        viz_type: selectedChartType.id,
-        datasource_id: datasetObj.id,
-        datasource_type: 'table',
-        params: JSON.stringify(params),
       });
-
-      console.log('Chart created:', response);
-
-      // Instead of navigating to charts list, open the chart in edit mode in Superset
-      // This allows the user to configure it properly
-      const chartId = response.id;
-      window.open(`http://localhost:8088/explore/?slice_id=${chartId}`, '_blank');
-
-      setTimeout(() => {
-        navigate('/charts');
-      }, 500);
     } catch (err: any) {
       setError(err.message || err.response?.data?.message || 'Failed to create chart');
       console.error('Chart creation error:', err);
@@ -244,10 +232,59 @@ export function CreateChart() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full grid grid-cols-12 gap-4 p-6">
-          {/* Column 1: KPI Selection */}
+      <div className="flex-1 overflow-hidden p-6">
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="h-[calc(100%-100px)] grid grid-cols-12 gap-4">
+          {/* Column 1: Configuration */}
           <div className="col-span-3 border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
+            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-900">Configuration</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Time Granularity */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Time Granularity
+                </label>
+                <select
+                  value={timeGrain}
+                  onChange={(e) => setTimeGrain(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                  <option value="PT15M">15 minutes</option>
+                  <option value="PT1H">1 hour</option>
+                  <option value="P1D">Daily</option>
+                </select>
+              </div>
+
+              {/* Time Range */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Time Range
+                </label>
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                  <option value="No filter">None</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday : today">Today and Yesterday</option>
+                  <option value="Last week">Last 7 days</option>
+                  <option value="Last month">Last 30 days</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: KPI Selection */}
+          <div className="col-span-5 border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
               <h3 className="font-semibold text-gray-900">Select KPIs</h3>
               <p className="text-xs text-gray-600 mt-1">
@@ -303,8 +340,8 @@ export function CreateChart() {
             </div>
           </div>
 
-          {/* Column 2: Chart Type Selection */}
-          <div className="col-span-3 border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
+          {/* Column 3: Chart Type Selection */}
+          <div className="col-span-4 border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
               <h3 className="font-semibold text-gray-900">Chart Type</h3>
               <p className="text-xs text-gray-600 mt-1">
@@ -356,59 +393,10 @@ export function CreateChart() {
               ))}
             </div>
           </div>
-
-          {/* Column 3: Preview */}
-          <div className="col-span-6 border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">Preview</h3>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-              {!previewUrl ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <p className="mb-2">No preview available</p>
-                    <p className="text-sm">Select KPIs and chart type, then click Preview</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg border border-gray-200 p-6 h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-gray-900 mb-2">Chart Preview</div>
-                    <div className="text-sm text-gray-600">{previewUrl}</div>
-                    <div className="mt-4 text-xs text-gray-500">
-                      Selected KPIs: {Array.from(selectedKPIs).join(', ')}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-gray-200 p-6 bg-white">
-        <div className="mb-4">
-          <label htmlFor="chartName" className="block text-sm font-medium text-gray-700 mb-2">
-            Chart Name (optional)
-          </label>
-          <input
-            id="chartName"
-            type="text"
-            value={chartName}
-            onChange={(e) => setChartName(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            placeholder="Auto-generated if left empty"
-          />
         </div>
 
-        {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        <div className="flex gap-3">
+        {/* Footer Buttons */}
+        <div className="flex gap-3 mt-6 mb-6">
           <button
             type="button"
             onClick={() => navigate('/charts')}
@@ -419,18 +407,10 @@ export function CreateChart() {
           <button
             type="button"
             onClick={handlePreview}
-            disabled={selectedKPIs.size === 0 || !selectedChartType}
-            className="px-6 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Preview
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
             disabled={loading || selectedKPIs.size === 0 || !selectedChartType}
             className="flex-1 bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating...' : 'Save Chart'}
+            {loading ? 'Loading...' : 'Preview Chart'}
           </button>
         </div>
       </div>
