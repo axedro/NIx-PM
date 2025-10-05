@@ -183,6 +183,8 @@ export function CreateChart() {
 
       // Find the time column in the dataset (look for columns with temporal type)
       let timeColumn = null;
+      let spatialColumn = null;
+
       if (datasetDetails.columns) {
         console.log('Dataset columns:', datasetDetails.columns);
 
@@ -195,10 +197,35 @@ export function CreateChart() {
         );
         timeColumn = temporalColumn?.column_name;
 
+        // Find spatial column (second column, after temporal)
+        // Look for columns with spatial names or just take the first non-temporal, non-metric column
+        const spatialColumnCandidates = datasetDetails.columns.filter((col: any) =>
+          !col.is_dttm &&
+          col.type_generic !== 1 &&
+          !col.column_name.toLowerCase().includes('time') &&
+          !col.column_name.toLowerCase().includes('date') &&
+          !col.column_name.toLowerCase().includes('timestamp') &&
+          !Array.from(selectedKPIs).includes(col.column_name)
+        );
+
+        // Priority for known spatial column names
+        const knownSpatialColumns = ['province', 'provincia', 'region', 'postal_code', 'zipcode', 'cell', 'celda', 'node', 'nodo'];
+        spatialColumn = spatialColumnCandidates.find((col: any) =>
+          knownSpatialColumns.some(name => col.column_name.toLowerCase().includes(name))
+        )?.column_name;
+
+        // If no known spatial column found, take the first candidate
+        if (!spatialColumn && spatialColumnCandidates.length > 0) {
+          spatialColumn = spatialColumnCandidates[0].column_name;
+        }
+
         console.log('Temporal column found:', temporalColumn);
+        console.log('Spatial column found:', spatialColumn);
       }
 
       console.log('Time column:', timeColumn);
+      console.log('Spatial column:', spatialColumn);
+      console.log('Selected spatial level:', selectedDataset?.geographic_level);
       console.log('Selected KPIs:', Array.from(selectedKPIs));
 
       // Map chart types to Superset's expected viz_type values
@@ -237,6 +264,22 @@ export function CreateChart() {
         optionName: `metric_${kpiName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${index}`
       }));
 
+      // Build adhoc_filters array
+      // Add spatial filter if not global (empty filter for cross-filter compatibility)
+      const adhocFilters: any[] = [];
+
+      if (selectedDataset?.geographic_level !== 'global' && spatialColumn) {
+        adhocFilters.push({
+          clause: 'WHERE',
+          subject: spatialColumn,
+          operator: 'IN',
+          comparator: [],
+          expressionType: 'SIMPLE',
+          isExtra: false,
+          filterOptionName: `filter_${spatialColumn.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
+        });
+      }
+
       // Build minimal form_data - don't include columns array to let Superset load them
       // Use user-selected time grain and range
       const formData = {
@@ -246,7 +289,13 @@ export function CreateChart() {
         time_range: timeRange,
         time_grain_sqla: timeGrain,
         metrics: metrics,
-        adhoc_filters: []
+        adhoc_filters: adhocFilters,
+        // Enable cross-filtering if spatial filter is present
+        ...(adhocFilters.length > 0 && {
+          extra_form_data: {
+            adhoc_filters: adhocFilters
+          }
+        })
       };
 
       console.log('Form data for Superset:', formData);
