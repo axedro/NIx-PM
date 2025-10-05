@@ -16,7 +16,6 @@ export function Layout({ children }: LayoutProps) {
     { icon: LayoutDashboard, label: 'Dashboards', path: '/dashboards' },
     { icon: BarChart3, label: 'Charts', path: '/charts' },
     { icon: Bell, label: 'Alerts', path: '/alerts' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -39,6 +38,18 @@ export function Layout({ children }: LayoutProps) {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">Business Intelligence</span>
+          <Link
+            to="/settings"
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
+              isActive('/settings')
+                ? 'bg-blue-50 text-blue-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="text-sm font-medium">Settings</span>
+          </Link>
           <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
               <User className="w-4 h-4 text-gray-600" />

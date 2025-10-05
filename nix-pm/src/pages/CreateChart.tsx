@@ -197,26 +197,24 @@ export function CreateChart() {
         );
         timeColumn = temporalColumn?.column_name;
 
-        // Find spatial column (second column, after temporal)
-        // Look for columns with spatial names or just take the first non-temporal, non-metric column
-        const spatialColumnCandidates = datasetDetails.columns.filter((col: any) =>
-          !col.is_dttm &&
-          col.type_generic !== 1 &&
-          !col.column_name.toLowerCase().includes('time') &&
-          !col.column_name.toLowerCase().includes('date') &&
-          !col.column_name.toLowerCase().includes('timestamp') &&
-          !Array.from(selectedKPIs).includes(col.column_name)
-        );
+        // Find spatial column based on the selected dataset's geographic level
+        // Map geographic level to expected column name
+        const geoLevelToColumn: Record<string, string> = {
+          'provincia': 'province',
+          'region': 'region',
+          'zipcode': 'postal_code',
+          'celda': 'cell',
+          'nodo': 'node'
+        };
 
-        // Priority for known spatial column names
-        const knownSpatialColumns = ['province', 'provincia', 'region', 'postal_code', 'zipcode', 'cell', 'celda', 'node', 'nodo'];
-        spatialColumn = spatialColumnCandidates.find((col: any) =>
-          knownSpatialColumns.some(name => col.column_name.toLowerCase().includes(name))
-        )?.column_name;
+        const expectedColumnName = geoLevelToColumn[selectedDataset?.geographic_level || ''];
 
-        // If no known spatial column found, take the first candidate
-        if (!spatialColumn && spatialColumnCandidates.length > 0) {
-          spatialColumn = spatialColumnCandidates[0].column_name;
+        if (expectedColumnName && selectedDataset?.geographic_level !== 'global') {
+          // Look for the expected column name
+          spatialColumn = datasetDetails.columns.find((col: any) =>
+            col.column_name.toLowerCase() === expectedColumnName.toLowerCase() ||
+            col.column_name.toLowerCase().includes(expectedColumnName.toLowerCase())
+          )?.column_name;
         }
 
         console.log('Temporal column found:', temporalColumn);
@@ -289,13 +287,7 @@ export function CreateChart() {
         time_range: timeRange,
         time_grain_sqla: timeGrain,
         metrics: metrics,
-        adhoc_filters: adhocFilters,
-        // Enable cross-filtering if spatial filter is present
-        ...(adhocFilters.length > 0 && {
-          extra_form_data: {
-            adhoc_filters: adhocFilters
-          }
-        })
+        adhoc_filters: adhocFilters
       };
 
       console.log('Form data for Superset:', formData);
