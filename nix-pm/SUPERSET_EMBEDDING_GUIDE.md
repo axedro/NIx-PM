@@ -20,14 +20,24 @@ Embedded Dashboards/Charts (iframes)
 
 ### 1. Enable Embedded Superset Feature
 
-Add the following configuration to your Superset config file (`superset_config.py`):
+The Superset configuration is split into two files in Docker:
+
+1. **`superset_config.py`**: Base configuration (do not modify)
+2. **`superset_config_docker.py`**: Custom configuration that overrides base settings
+
+Create or update `/app/docker/pythonpath_dev/superset_config_docker.py` with the following configuration:
 
 ```python
-# Enable embedding configuration
-FEATURE_FLAGS["EMBEDDED_SUPERSET"] = True
-FEATURE_FLAGS["DASHBOARD_NATIVE_FILTERS"] = True
-FEATURE_FLAGS["DASHBOARD_CROSS_FILTERS"] = True
-FEATURE_FLAGS["DASHBOARD_RBAC"] = True
+# Configuration for embedding Superset in NIx PM
+
+# Enable embedding features
+FEATURE_FLAGS = {
+    "ALERT_REPORTS": True,
+    "EMBEDDED_SUPERSET": True,
+    "DASHBOARD_NATIVE_FILTERS": True,
+    "DASHBOARD_CROSS_FILTERS": True,
+    "DASHBOARD_RBAC": True
+}
 
 # Guest token configuration
 GUEST_ROLE_NAME = "Public"
@@ -36,7 +46,7 @@ GUEST_TOKEN_JWT_ALGO = "HS256"
 GUEST_TOKEN_HEADER_NAME = "X-GuestToken"
 GUEST_TOKEN_JWT_EXP_SECONDS = 300  # 5 minutes
 
-# CORS configuration
+# CORS configuration for localhost:5173
 ENABLE_CORS = True
 CORS_OPTIONS = {
     "supports_credentials": True,
@@ -45,60 +55,90 @@ CORS_OPTIONS = {
     "origins": ["http://localhost:5173", "http://localhost:8088"]
 }
 
-# Talisman configuration to allow embedding
-TALISMAN_ENABLED = False
-HTTP_HEADERS = {"X-Frame-Options": "ALLOWALL"}
+# Talisman configuration for iframe embedding
+TALISMAN_ENABLED = True
+TALISMAN_CONFIG = {
+    "content_security_policy": {
+        "frame-ancestors": ["http://localhost:5173", "http://localhost:8088"]
+    },
+    "force_https": False
+}
 
 # Session configuration
 SESSION_COOKIE_SAMESITE = "None"
 SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
 SESSION_COOKIE_HTTPONLY = False
 
-# Disable CSRF for API endpoints (development only)
+# Disable CSRF (development only)
 WTF_CSRF_ENABLED = False
 WTF_CSRF_EXEMPT_LIST = [".*"]
 
 # Enable embedded routes
 PREVENT_UNSAFE_DEFAULT_URLS_ON_DATASET = False
-
-# Hide Superset branding in embedded mode
-LOGO_TARGET_PATH = None
-LOGO_TOOLTIP = "NIx PM"
-LOGO_RIGHT_TEXT = ""
-
-# Custom CSS to hide navigation in embedded views
-CUSTOM_CSS = """
-/* Hide header in standalone mode */
-body.standalone header.top,
-body.standalone .ant-layout-header,
-body.standalone nav[role="navigation"] {
-  display: none !important;
-}
-
-/* Hide Superset logo and branding */
-body.standalone .superset-logo,
-body.standalone a[href="/superset/welcome/"] {
-  display: none !important;
-}
-
-/* Adjust main content area when header is hidden */
-body.standalone main {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-"""
 ```
+
+**Note:** The `superset_config.py` file automatically imports `superset_config_docker.py` at the end, so any settings in `superset_config_docker.py` will override the base configuration.
 
 ### 2. Docker Configuration
 
-If using Docker, add the configuration to the mounted config file:
+Create the configuration file in the Docker container:
 
 ```bash
-docker exec superset_app bash -c 'cat >> /app/docker/pythonpath_dev/superset_config.py << "EOF"
-# [Add configuration from above]
+docker exec superset_app bash -c 'cat > /app/docker/pythonpath_dev/superset_config_docker.py << "EOF"
+# Configuration for embedding Superset in NIx PM
+
+# Enable embedding features
+FEATURE_FLAGS = {
+    "ALERT_REPORTS": True,
+    "EMBEDDED_SUPERSET": True,
+    "DASHBOARD_NATIVE_FILTERS": True,
+    "DASHBOARD_CROSS_FILTERS": True,
+    "DASHBOARD_RBAC": True
+}
+
+# Guest token configuration
+GUEST_ROLE_NAME = "Public"
+GUEST_TOKEN_JWT_SECRET = "test-guest-secret-change-me"
+GUEST_TOKEN_JWT_ALGO = "HS256"
+GUEST_TOKEN_HEADER_NAME = "X-GuestToken"
+GUEST_TOKEN_JWT_EXP_SECONDS = 300
+
+# CORS configuration for localhost:5173
+ENABLE_CORS = True
+CORS_OPTIONS = {
+    "supports_credentials": True,
+    "allow_headers": ["*"],
+    "resources": ["*"],
+    "origins": ["http://localhost:5173", "http://localhost:8088"]
+}
+
+# Talisman configuration for iframe embedding
+TALISMAN_ENABLED = True
+TALISMAN_CONFIG = {
+    "content_security_policy": {
+        "frame-ancestors": ["http://localhost:5173", "http://localhost:8088"]
+    },
+    "force_https": False
+}
+
+# Session configuration
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = False
+
+# Disable CSRF (development only)
+WTF_CSRF_ENABLED = False
+WTF_CSRF_EXEMPT_LIST = [".*"]
+
+# Enable embedded routes
+PREVENT_UNSAFE_DEFAULT_URLS_ON_DATASET = False
 EOF
 '
 ```
+
+**Important:** Configuration files are located in the project root for reference:
+- `/Users/alejandromedina/dev/FC/PM/superset_config.py` (base config - read-only)
+- `/Users/alejandromedina/dev/FC/PM/superset_config_docker.py` (custom config - editable)
 
 ### 3. Restart Superset
 
