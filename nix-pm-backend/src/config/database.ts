@@ -33,8 +33,8 @@ export async function queryDatabase<T = any>(
 ): Promise<T[]> {
   const client = await pool.connect();
   try {
-    const result: QueryResult<T> = await client.query(sql, params);
-    return result.rows;
+    const result = await client.query(sql, params);
+    return result.rows as T[];
   } finally {
     client.release();
   }
