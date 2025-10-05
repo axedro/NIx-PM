@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { supersetService } from '../services/superset';
 import { Plus, ArrowLeft, MoreVertical, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ActionsMenu } from '../components/ActionsMenu';
+import config from '../config/env';
 
 export function Dashboards() {
   const [dashboards, setDashboards] = useState<any[]>([]);
@@ -157,8 +158,8 @@ export function Dashboards() {
             key={isCreatingNew ? 'new-dashboard' : selectedDashboard?.id}
             src={
               isCreatingNew
-                ? 'http://localhost:8088/dashboard/new/'
-                : `http://localhost:8088/superset/dashboard/${selectedDashboard?.id}/?standalone=true`
+                ? `${config.SUPERSET_URL}/dashboard/new/`
+                : `${config.SUPERSET_URL}/superset/dashboard/${selectedDashboard?.id}/?standalone=true`
             }
             className="absolute border-0"
             style={{

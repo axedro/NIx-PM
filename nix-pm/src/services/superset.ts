@@ -1,7 +1,8 @@
 import axios from 'axios';
+import config from '../config/env';
 
-// Use proxy in development, direct URL in production
-const SUPERSET_URL = import.meta.env.DEV ? '' : 'http://localhost:8088';
+// Use proxy in development, runtime config in production
+const SUPERSET_URL = import.meta.env.DEV ? '' : config.SUPERSET_URL;
 
 export interface SupersetCredentials {
   username: string;

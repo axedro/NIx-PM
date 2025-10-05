@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supersetService } from '../services/superset';
 import { semanticLayerService } from '../services/semanticLayer';
 import supersetDatasetsService from '../services/supersetDatasetsService';
+import config from '../config/env';
 
 interface KPI {
   name: string;
@@ -294,7 +295,7 @@ export function CreateChart() {
 
       // Use the new endpoint format with datasource parameters
       const formDataEncoded = encodeURIComponent(JSON.stringify(formData));
-      const exploreUrl = `http://localhost:8088/superset/explore/?datasource_type=table&datasource_id=${datasetObj.id}&form_data=${formDataEncoded}`;
+      const exploreUrl = `${config.SUPERSET_URL}/superset/explore/?datasource_type=table&datasource_id=${datasetObj.id}&form_data=${formDataEncoded}`;
 
       console.log('Opening Superset with form_data:', formData);
       console.log('Explore URL:', exploreUrl);

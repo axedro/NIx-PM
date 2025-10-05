@@ -22,6 +22,14 @@ spec:
         ports:
         - containerPort: 80
           name: http
+        env:
+        - name: SUPERSET_URL
+          valueFrom:
+            configMapKeyRef:
+              name: nix-pm-config
+              key: SUPERSET_URL
+        - name: API_URL
+          value: "/api"
         resources:
           requests:
             memory: "128Mi"

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supersetService } from '../services/superset';
 import { Plus, ArrowLeft, MoreVertical, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ActionsMenu } from '../components/ActionsMenu';
+import config from '../config/env';
 
 export function Charts() {
   const navigate = useNavigate();
@@ -177,8 +178,8 @@ export function Charts() {
             key={`${selectedChart.id}-${isEditMode ? 'edit' : 'view'}`}
             src={
               isEditMode
-                ? `http://localhost:8088/explore/?slice_id=${selectedChart.id}`
-                : `http://localhost:8088/explore/?form_data=%7B%22slice_id%22%3A${selectedChart.id}%7D&standalone=3`
+                ? `${config.SUPERSET_URL}/explore/?slice_id=${selectedChart.id}`
+                : `${config.SUPERSET_URL}/explore/?form_data=%7B%22slice_id%22%3A${selectedChart.id}%7D&standalone=3`
             }
             className="absolute border-0"
             style={

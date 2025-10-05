@@ -36,6 +36,11 @@ services:
       context: ./nix-pm
       dockerfile: Dockerfile
     container_name: nix-pm-frontend
+    environment:
+      # External Superset URL (accessible from user browsers)
+      SUPERSET_URL: ${SUPERSET_URL}
+      # Backend API URL (can be relative in production with ingress)
+      API_URL: /api
     ports:
       - "80:80"
     depends_on:
