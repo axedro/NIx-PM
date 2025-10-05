@@ -4,8 +4,9 @@ metadata:
   name: nix-pm-config
   namespace: nix-pm
 data:
-  # Database Configuration
-  DB_HOST: "postgres-service"
+  # External PostgreSQL Database Configuration
+  # Update these values to point to your external PostgreSQL instance
+  DB_HOST: "your-postgres-host.example.com"
   DB_PORT: "5432"
   DB_NAME: "nixpm"
 
@@ -13,8 +14,9 @@ data:
   SMTP_HOST: "smtp.gmail.com"
   SMTP_PORT: "587"
 
-  # Superset Configuration
-  SUPERSET_URL: "http://superset-service:8088"
+  # External Superset Configuration
+  # Update this URL to point to your external Superset instance
+  SUPERSET_URL: "https://your-superset-instance.example.com"
   SUPERSET_USERNAME: "admin"
 
   # Application Configuration
