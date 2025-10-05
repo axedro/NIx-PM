@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supersetService } from '../services/superset';
 import { semanticLayerService } from '../services/semanticLayer';
+import supersetDatasetsService from '../services/supersetDatasetsService';
 
 interface KPI {
   name: string;
@@ -29,10 +30,39 @@ export function CreateChart() {
   const [chartTypesByCategory, setChartTypesByCategory] = useState<Record<string, ChartType[]>>({});
   const [timeGrain, setTimeGrain] = useState('P1D'); // Default: daily
   const [timeRange, setTimeRange] = useState('No filter'); // Default: no filter
+  const [availableDatasets, setAvailableDatasets] = useState<any[]>([]);
+  const [selectedDataset, setSelectedDataset] = useState<any | null>(null);
+  const [selectedSpatialLevel, setSelectedSpatialLevel] = useState<string>('');
+  const [availableTimeGranularities, setAvailableTimeGranularities] = useState<string[]>([]);
 
   useEffect(() => {
     loadSemanticLayer();
+    loadDatasets();
   }, []);
+
+  const loadDatasets = async () => {
+    try {
+      const datasets = await supersetDatasetsService.getAllDatasets({ active_only: true });
+      setAvailableDatasets(datasets as any);
+      if (datasets.length > 0) {
+        // Get unique spatial levels
+        const firstSpatialLevel = datasets[0].geographic_level;
+        setSelectedSpatialLevel(firstSpatialLevel);
+
+        // Get time granularities for first spatial level
+        const timeGrains = datasets
+          .filter((d: any) => d.geographic_level === firstSpatialLevel)
+          .map((d: any) => d.time_aggregation);
+        setAvailableTimeGranularities(timeGrains);
+
+        // Set first dataset as default
+        setSelectedDataset(datasets[0] as any);
+        setTimeGrain(datasets[0].time_aggregation);
+      }
+    } catch (err) {
+      console.error('Failed to load datasets:', err);
+    }
+  };
 
   const loadSemanticLayer = async () => {
     try {
@@ -79,6 +109,38 @@ export function CreateChart() {
     setSelectedKPIs(newSelected);
   };
 
+  const handleSpatialLevelChange = (spatialLevel: string) => {
+    setSelectedSpatialLevel(spatialLevel);
+
+    // Get available time granularities for this spatial level
+    const timeGrains = availableDatasets
+      .filter((d: any) => d.geographic_level === spatialLevel)
+      .map((d: any) => d.time_aggregation);
+    setAvailableTimeGranularities(timeGrains);
+
+    // Select first available time grain
+    if (timeGrains.length > 0) {
+      const firstTimeGrain = timeGrains[0];
+      setTimeGrain(firstTimeGrain);
+
+      // Find and set the matching dataset
+      const matchingDataset = availableDatasets.find(
+        (d: any) => d.geographic_level === spatialLevel && d.time_aggregation === firstTimeGrain
+      );
+      setSelectedDataset(matchingDataset || null);
+    }
+  };
+
+  const handleTimeGrainChange = (newTimeGrain: string) => {
+    setTimeGrain(newTimeGrain);
+
+    // Find and set the matching dataset
+    const matchingDataset = availableDatasets.find(
+      (d: any) => d.geographic_level === selectedSpatialLevel && d.time_aggregation === newTimeGrain
+    );
+    setSelectedDataset(matchingDataset || null);
+  };
+
   const handlePreview = async () => {
     if (selectedKPIs.size === 0) {
       setError('Please select at least one KPI');
@@ -94,13 +156,12 @@ export function CreateChart() {
     setError(null);
 
     try {
-      // Get the dataset from the first selected KPI (assuming all selected KPIs use same dataset)
-      const firstKPI = Array.from(selectedKPIs)[0];
-      const datasetName = semanticLayerService.getDatasetForKPI(firstKPI);
-
-      if (!datasetName) {
-        throw new Error('Dataset not found for selected KPI');
+      // Use the selected dataset's postgres table
+      if (!selectedDataset) {
+        throw new Error('Please select a spatial aggregation level');
       }
+
+      const datasetName = selectedDataset.postgres_table;
 
       // Get dataset details from Superset
       const datasets = await supersetService.getDatasets();
@@ -246,6 +307,24 @@ export function CreateChart() {
               <h3 className="font-semibold text-gray-900">Configuration</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Spatial Aggregation */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Spatial Aggregation
+                </label>
+                <select
+                  value={selectedSpatialLevel}
+                  onChange={(e) => handleSpatialLevelChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                  {Array.from(new Set(availableDatasets.map(d => d.geographic_level))).map(level => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Time Granularity */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -253,12 +332,15 @@ export function CreateChart() {
                 </label>
                 <select
                   value={timeGrain}
-                  onChange={(e) => setTimeGrain(e.target.value)}
+                  onChange={(e) => handleTimeGrainChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  disabled={!selectedSpatialLevel}
                 >
-                  <option value="PT15M">15 minutes</option>
-                  <option value="PT1H">1 hour</option>
-                  <option value="P1D">Daily</option>
+                  {availableTimeGranularities.map(grain => (
+                    <option key={grain} value={grain}>
+                      {grain}
+                    </option>
+                  ))}
                 </select>
               </div>
 

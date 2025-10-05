@@ -26,13 +26,11 @@ CORS_OPTIONS = {
 }
 
 # Talisman configuration for iframe embedding
-TALISMAN_ENABLED = True
-TALISMAN_CONFIG = {
-    "content_security_policy": {
-        "frame-ancestors": ["http://localhost:5173", "http://localhost:8088"]
-    },
-    "force_https": False
-}
+TALISMAN_ENABLED = False
+
+# Disable X-Frame-Options header completely
+HTTP_HEADERS = {}
+X_FRAME_OPTIONS = ""
 
 # Session configuration
 SESSION_COOKIE_SAMESITE = "None"
