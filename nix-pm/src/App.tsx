@@ -9,6 +9,7 @@ import { CreateChartSuperset } from './pages/CreateChartSuperset';
 import { Alerts } from './pages/Alerts';
 import { CreateAlert } from './pages/CreateAlert';
 import { AlertDetails } from './pages/AlertDetails';
+import Settings from './pages/Settings';
 import { supersetService } from './services/superset';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,7 @@ function App() {
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/alerts/create" element={<CreateAlert />} />
                   <Route path="/alerts/:id" element={<AlertDetails />} />
+                  <Route path="/settings" element={<Settings />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>

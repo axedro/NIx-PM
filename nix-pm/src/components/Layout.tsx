@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, ChevronLeft, ChevronRight, LayoutDashboard, BarChart3, Bell, User, LogOut } from 'lucide-react';
+import { Menu, ChevronLeft, ChevronRight, LayoutDashboard, BarChart3, Bell, User, LogOut, Settings } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supersetService } from '../services/superset';
 
@@ -16,6 +16,7 @@ export function Layout({ children }: LayoutProps) {
     { icon: LayoutDashboard, label: 'Dashboards', path: '/dashboards' },
     { icon: BarChart3, label: 'Charts', path: '/charts' },
     { icon: Bell, label: 'Alerts', path: '/alerts' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
   const isActive = (path: string) => location.pathname === path;

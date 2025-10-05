@@ -6,6 +6,7 @@ import { startAlertScheduler } from './services/schedulerService';
 import alertsRouter from './routes/alerts';
 import triggersRouter from './routes/triggers';
 import statisticsRouter from './routes/statistics';
+import supersetDatasetsRouter from './routes/supersetDatasets';
 
 // Load environment variables
 dotenv.config();
@@ -39,6 +40,7 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/alerts', alertsRouter);
 app.use('/api/triggers', triggersRouter);
 app.use('/api/statistics', statisticsRouter);
+app.use('/api/superset-datasets', supersetDatasetsRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
