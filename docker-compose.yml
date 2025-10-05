@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: nix-pm-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nixpm}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nix-pm-network
+
+  # Backend Service
+  backend:
+    build:
+      context: ./nix-pm-backend
+      dockerfile: Dockerfile
+    container_name: nix-pm-backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-nixpm}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SUPERSET_URL: ${SUPERSET_URL:-http://superset:8088}
+      SUPERSET_USERNAME: ${SUPERSET_USERNAME:-admin}
+      SUPERSET_PASSWORD: ${SUPERSET_PASSWORD:-admin}
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nix-pm-network
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./nix-pm
+      dockerfile: Dockerfile
+    container_name: nix-pm-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - nix-pm-network
+    restart: unless-stopped
+
+  # Apache Superset (optional - if not running separately)
+  superset:
+    image: apache/superset:latest
+    container_name: nix-pm-superset
+    environment:
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY:-your-secret-key-change-in-production}
+      DATABASE_DIALECT: postgresql
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_DB: superset
+      DATABASE_USER: ${DB_USER:-postgres}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "8088:8088"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./superset_config.py:/app/pythonpath/superset_config.py
+    networks:
+      - nix-pm-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+      superset db upgrade &&
+      superset fab create-admin --username admin --firstname Admin --lastname Admin --email admin@admin.com --password admin || true &&
+      superset init &&
+      gunicorn --bind 0.0.0.0:8088 --workers 4 --timeout 120 --limit-request-line 0 --limit-request-field_size 0 'superset.app:create_app()'
+      "
+
+networks:
+  nix-pm-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

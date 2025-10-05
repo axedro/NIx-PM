@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nix-pm
+  labels:
+    name: nix-pm
+    environment: production

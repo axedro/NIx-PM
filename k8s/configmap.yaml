@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nix-pm-config
+  namespace: nix-pm
+data:
+  # Database Configuration
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "nixpm"
+
+  # SMTP Configuration
+  SMTP_HOST: "smtp.gmail.com"
+  SMTP_PORT: "587"
+
+  # Superset Configuration
+  SUPERSET_URL: "http://superset-service:8088"
+  SUPERSET_USERNAME: "admin"
+
+  # Application Configuration
+  NODE_ENV: "production"
