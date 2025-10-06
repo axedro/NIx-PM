@@ -6,11 +6,43 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      // Superset API and UI routes
       '/api/v1': {
         target: 'http://localhost:8088',
         changeOrigin: true,
         secure: false,
       },
+      '/superset': {
+        target: 'http://localhost:8088',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/login': {
+        target: 'http://localhost:8088',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/logout': {
+        target: 'http://localhost:8088',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/dashboard': {
+        target: 'http://localhost:8088',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/explore': {
+        target: 'http://localhost:8088',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/static': {
+        target: 'http://localhost:8088',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Backend API routes
       '/api/alerts': {
         target: 'http://localhost:3001',
         changeOrigin: true,
