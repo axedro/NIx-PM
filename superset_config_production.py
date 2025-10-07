@@ -37,6 +37,7 @@ TALISMAN_CONFIG = {
         "connect-src": ["'self'", "https://your-api-domain.com"],
         "frame-ancestors": [
             "'self'",
+            "https://localhost:5173",            # Local development with HTTPS
             "https://your-frontend-domain.com",  # CHANGE TO YOUR PRODUCTION DOMAIN
             "https://*.your-domain.com"          # Allow subdomains if needed
         ]
@@ -68,6 +69,7 @@ CORS_OPTIONS = {
         "/explore/*"
     ],  # Specific resources only
     "origins": [
+        "https://localhost:5173",            # Local development with HTTPS
         "https://your-frontend-domain.com",  # CHANGE TO YOUR PRODUCTION DOMAIN
         "https://*.your-domain.com"          # Allow subdomains if needed
     ]

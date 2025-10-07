@@ -178,8 +178,8 @@ export function Charts() {
             key={`${selectedChart.id}-${isEditMode ? 'edit' : 'view'}`}
             src={
               isEditMode
-                ? `${config.SUPERSET_URL}/explore/?slice_id=${selectedChart.id}`
-                : `${config.SUPERSET_URL}/explore/?form_data=%7B%22slice_id%22%3A${selectedChart.id}%7D&standalone=3`
+                ? `${config.SUPERSET_IFRAME_URL}/explore/?slice_id=${selectedChart.id}`
+                : `${config.SUPERSET_IFRAME_URL}/explore/?form_data=%7B%22slice_id%22%3A${selectedChart.id}%7D&standalone=3`
             }
             className="absolute border-0"
             style={

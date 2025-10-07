@@ -158,8 +158,8 @@ export function Dashboards() {
             key={isCreatingNew ? 'new-dashboard' : selectedDashboard?.id}
             src={
               isCreatingNew
-                ? `${config.SUPERSET_URL}/dashboard/new/`
-                : `${config.SUPERSET_URL}/superset/dashboard/${selectedDashboard?.id}/?standalone=true`
+                ? `${config.SUPERSET_IFRAME_URL}/dashboard/new/`
+                : `${config.SUPERSET_IFRAME_URL}/superset/dashboard/${selectedDashboard?.id}/?standalone=true`
             }
             className="absolute border-0"
             style={{

@@ -1,48 +1,57 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), basicSsl()],
   server: {
+    https: true,
     proxy: {
-      // Superset API and UI routes
+      // Superset API and UI routes - Production Superset
       '/api/v1': {
-        target: 'http://localhost:8088',
+        target: 'https://nixpm.dashboard.reddie.ai',
         changeOrigin: true,
-        secure: false,
+        secure: true,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
       '/superset': {
-        target: 'http://localhost:8088',
+        target: 'https://nixpm.dashboard.reddie.ai',
         changeOrigin: true,
-        secure: false,
-      },
-      '/login': {
-        target: 'http://localhost:8088',
-        changeOrigin: true,
-        secure: false,
+        secure: true,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
       '/logout': {
-        target: 'http://localhost:8088',
+        target: 'https://nixpm.dashboard.reddie.ai',
         changeOrigin: true,
-        secure: false,
+        secure: true,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
       '/dashboard': {
-        target: 'http://localhost:8088',
+        target: 'https://nixpm.dashboard.reddie.ai',
         changeOrigin: true,
-        secure: false,
+        secure: true,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
       '/explore': {
-        target: 'http://localhost:8088',
+        target: 'https://nixpm.dashboard.reddie.ai',
         changeOrigin: true,
-        secure: false,
+        secure: true,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
       '/static': {
-        target: 'http://localhost:8088',
+        target: 'https://nixpm.dashboard.reddie.ai',
         changeOrigin: true,
-        secure: false,
+        secure: true,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       },
-      // Backend API routes
+      // Backend API routes (keep HTTP for local backend)
       '/api/alerts': {
         target: 'http://localhost:3001',
         changeOrigin: true,
