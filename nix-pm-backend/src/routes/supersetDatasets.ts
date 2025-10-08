@@ -8,6 +8,7 @@ import {
   getActiveDatasets,
   getDatasetsByLevel,
 } from '../services/supersetDatasetsService';
+import { queryDatabase } from '../config/database';
 
 const router = Router();
 
@@ -141,8 +142,6 @@ router.get('/meta/kpis', async (req: Request, res: Response) => {
 // Get available PostgreSQL tables and views
 router.get('/meta/tables', async (req: Request, res: Response) => {
   try {
-    const { queryDatabase } = require('../config/database');
-
     const query = `
       SELECT table_name
       FROM information_schema.tables
@@ -152,7 +151,7 @@ router.get('/meta/tables', async (req: Request, res: Response) => {
     `;
 
     const rows = await queryDatabase<{ table_name: string }>(query);
-    const tables = rows.map(row => row.table_name);
+    const tables = rows.map((row: { table_name: string }) => row.table_name);
 
     res.json({ success: true, data: tables });
   } catch (error: any) {
@@ -165,7 +164,6 @@ router.get('/meta/tables', async (req: Request, res: Response) => {
 router.get('/meta/tables/:tableName/columns', async (req: Request, res: Response) => {
   try {
     const { tableName } = req.params;
-    const { queryDatabase } = require('../config/database');
 
     const query = `
       SELECT column_name, data_type
@@ -176,7 +174,7 @@ router.get('/meta/tables/:tableName/columns', async (req: Request, res: Response
     `;
 
     const rows = await queryDatabase<{ column_name: string; data_type: string }>(query, [tableName]);
-    const columns = rows.map(row => ({
+    const columns = rows.map((row: { column_name: string; data_type: string }) => ({
       name: row.column_name,
       type: row.data_type,
     }));
