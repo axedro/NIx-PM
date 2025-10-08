@@ -14,6 +14,7 @@ export function Dashboards() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
+  const [guestToken, setGuestToken] = useState<string | null>(null);
   const itemsPerPage = 12;
 
   useEffect(() => {
@@ -37,12 +38,23 @@ export function Dashboards() {
   const handleBack = () => {
     setSelectedDashboard(null);
     setIsCreatingNew(false);
+    setGuestToken(null);
   };
 
-  const handleEditDashboard = (dashboardId: number) => {
+  const handleEditDashboard = async (dashboardId: number) => {
     const dashboard = dashboards.find(d => d.id === dashboardId);
     if (dashboard) {
       setSelectedDashboard(dashboard);
+      // Get guest token for this dashboard
+      try {
+        const token = await supersetService.getGuestToken([
+          { type: 'dashboard', id: String(dashboardId) }
+        ]);
+        setGuestToken(token);
+      } catch (err) {
+        console.error('Failed to get guest token:', err);
+        setError('Failed to load dashboard. Please try again.');
+      }
     }
   };
 
@@ -154,23 +166,39 @@ export function Dashboards() {
           </div>
         </div>
         <div className="flex-1 relative overflow-hidden">
-          <iframe
-            key={isCreatingNew ? 'new-dashboard' : selectedDashboard?.id}
-            src={
-              isCreatingNew
-                ? `${config.SUPERSET_IFRAME_URL}/dashboard/new/`
-                : `${config.SUPERSET_IFRAME_URL}/superset/dashboard/${selectedDashboard?.id}/?standalone=true`
-            }
-            className="absolute border-0"
-            style={{
-              top: isCreatingNew ? '-60px' : 0,
-              left: 0,
-              width: '100%',
-              height: isCreatingNew ? 'calc(100% + 60px)' : '100%'
-            }}
-            title={isCreatingNew ? 'Create New Dashboard' : selectedDashboard?.dashboard_title}
-            allow="fullscreen"
-          />
+          {guestToken ? (
+            <iframe
+              key={selectedDashboard?.id}
+              src={`${config.SUPERSET_IFRAME_URL}/superset/dashboard/${selectedDashboard?.id}/?standalone=true&guest_token=${guestToken}`}
+              className="absolute border-0"
+              style={{
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%'
+              }}
+              title={selectedDashboard?.dashboard_title}
+              allow="fullscreen"
+            />
+          ) : isCreatingNew ? (
+            <iframe
+              key="new-dashboard"
+              src={`${config.SUPERSET_IFRAME_URL}/dashboard/new/`}
+              className="absolute border-0"
+              style={{
+                top: '-60px',
+                left: 0,
+                width: '100%',
+                height: 'calc(100% + 60px)'
+              }}
+              title="Create New Dashboard"
+              allow="fullscreen"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-600">Loading dashboard...</div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -240,7 +268,17 @@ export function Dashboards() {
               {paginatedDashboards.map((dashboard) => (
               <div
                 key={dashboard.id}
-                onClick={() => setSelectedDashboard(dashboard)}
+                onClick={async () => {
+                  setSelectedDashboard(dashboard);
+                  try {
+                    const token = await supersetService.getGuestToken([
+                      { type: 'dashboard', id: String(dashboard.id) }
+                    ]);
+                    setGuestToken(token);
+                  } catch (err) {
+                    console.error('Failed to get guest token:', err);
+                  }
+                }}
                 className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-2">

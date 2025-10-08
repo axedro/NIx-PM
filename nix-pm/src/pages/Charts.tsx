@@ -16,6 +16,7 @@ export function Charts() {
   const [vizTypeFilter, setVizTypeFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
+  const [guestToken, setGuestToken] = useState<string | null>(null);
   const itemsPerPage = 12;
 
   useEffect(() => {
@@ -70,6 +71,7 @@ export function Charts() {
   const handleBack = () => {
     setSelectedChart(null);
     setIsEditMode(false);
+    setGuestToken(null);
   };
 
   const vizTypes = useMemo(() => {
@@ -174,32 +176,39 @@ export function Charts() {
           </div>
         </div>
         <div className="flex-1 relative overflow-hidden">
-          <iframe
-            key={`${selectedChart.id}-${isEditMode ? 'edit' : 'view'}`}
-            src={
-              isEditMode
-                ? `${config.SUPERSET_IFRAME_URL}/explore/?slice_id=${selectedChart.id}`
-                : `${config.SUPERSET_IFRAME_URL}/explore/?form_data=%7B%22slice_id%22%3A${selectedChart.id}%7D&standalone=3`
-            }
-            className="absolute border-0"
-            style={
-              isEditMode
-                ? {
-                    top: '-60px',
-                    left: 0,
-                    width: '100%',
-                    height: 'calc(100% + 60px)'
-                  }
-                : {
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%'
-                  }
-            }
-            title={selectedChart.slice_name}
-            allow="fullscreen"
-          />
+          {guestToken ? (
+            <iframe
+              key={selectedChart.id}
+              src={
+                isEditMode
+                  ? `${config.SUPERSET_IFRAME_URL}/explore/?slice_id=${selectedChart.id}`
+                  : `${config.SUPERSET_IFRAME_URL}/superset/explore/?slice_id=${selectedChart.id}&standalone=true`
+              }
+              className="absolute border-0"
+              style={
+                isEditMode
+                  ? {
+                      top: '-60px',
+                      left: 0,
+                      width: '100%',
+                      height: 'calc(100% + 60px)'
+                    }
+                  : {
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%'
+                    }
+              }
+              title={selectedChart.slice_name}
+              allow="fullscreen"
+              credentials="include"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-600">Loading chart...</div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -271,7 +280,11 @@ export function Charts() {
               {paginatedCharts.map((chart) => (
               <div
                 key={chart.id}
-                onClick={() => setSelectedChart(chart)}
+                onClick={() => {
+                  setSelectedChart(chart);
+                  // Charts use the authenticated session, no guest token needed
+                  setGuestToken('authenticated');
+                }}
                 className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
               >
                 <div className="flex items-start justify-between mb-2">
@@ -289,6 +302,7 @@ export function Charts() {
                       <ActionsMenu
                         onEdit={() => {
                           setSelectedChart(chart);
+                          setGuestToken('authenticated');
                           handleEditChart(chart.id);
                         }}
                         onDelete={() => handleDeleteChart(chart.id)}

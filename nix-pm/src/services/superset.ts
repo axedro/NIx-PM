@@ -57,6 +57,23 @@ class SupersetService {
     return this.credentials;
   }
 
+  private extractCsrfFromToken(token: string): string | null {
+    try {
+      // JWT has three parts separated by dots: header.payload.signature
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return null;
+      }
+
+      // Decode the payload (second part)
+      const payload = JSON.parse(atob(parts[1]));
+      return payload.csrf || null;
+    } catch (error) {
+      console.error('Failed to extract CSRF token from JWT:', error);
+      return null;
+    }
+  }
+
   async getGuestToken(resources: { type: string; id: string }[]): Promise<string> {
     if (!this.accessToken) {
       throw new Error('Not authenticated. Please login first.');
@@ -65,6 +82,20 @@ class SupersetService {
     try {
       console.log('Requesting guest token for resources:', resources);
       console.log('Using access token:', this.accessToken.substring(0, 20) + '...');
+
+      // Extract CSRF token from JWT
+      const csrfToken = this.extractCsrfFromToken(this.accessToken);
+      console.log('Extracted CSRF token:', csrfToken ? csrfToken.substring(0, 20) + '...' : 'none');
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+      };
+
+      // Add CSRF token to headers if available
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
 
       const response = await axios.post(
         `${SUPERSET_URL}/api/v1/security/guest_token/`,
@@ -77,12 +108,7 @@ class SupersetService {
           resources: resources,
           rls: [],
         },
-        {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
+        { headers }
       );
 
       console.log('Guest token response:', response.data);
