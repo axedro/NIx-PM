@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supersetService } from '../services/superset';
-import { Plus, ArrowLeft, MoreVertical, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ArrowLeft, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ActionsMenu } from '../components/ActionsMenu';
 import config from '../config/env';
 
@@ -37,7 +37,7 @@ export function Charts() {
   };
 
 
-  const handleEditChart = (chartId: number) => {
+  const handleEditChart = (_chartId: number) => {
     setIsEditMode(true);
   };
 

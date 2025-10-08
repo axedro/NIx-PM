@@ -15,7 +15,6 @@ export interface GuestToken {
 
 class SupersetService {
   private accessToken: string | null = null;
-  private refreshToken: string | null = null;
   private credentials: SupersetCredentials | null = null;
 
   async login(credentials: SupersetCredentials): Promise<void> {
@@ -28,12 +27,13 @@ class SupersetService {
       });
 
       this.accessToken = response.data.access_token;
-      this.refreshToken = response.data.refresh_token;
       this.credentials = credentials; // Store credentials for session linking
 
       // Store credentials in sessionStorage for persistence
       sessionStorage.setItem('superset_credentials', JSON.stringify(credentials));
-      sessionStorage.setItem('superset_access_token', this.accessToken);
+      if (this.accessToken) {
+        sessionStorage.setItem('superset_access_token', this.accessToken);
+      }
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -363,7 +363,6 @@ class SupersetService {
 
   logout(): void {
     this.accessToken = null;
-    this.refreshToken = null;
     this.credentials = null;
     sessionStorage.removeItem('superset_credentials');
     sessionStorage.removeItem('superset_access_token');

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronRight, ChevronDown } from 'lucide-react';
 import { supersetService } from '../services/superset';
-import { semanticLayerService, KPI, ChartType } from '../services/semanticLayer';
+import { semanticLayerService, type KPI, type ChartType } from '../services/semanticLayer';
 
 interface CreateChartModalProps {
   isOpen: boolean;

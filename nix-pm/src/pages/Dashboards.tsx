@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supersetService } from '../services/superset';
-import { Plus, ArrowLeft, MoreVertical, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ArrowLeft, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ActionsMenu } from '../components/ActionsMenu';
 import config from '../config/env';
 

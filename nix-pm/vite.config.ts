@@ -6,7 +6,6 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 export default defineConfig({
   plugins: [react(), basicSsl()],
   server: {
-    https: true,
     proxy: {
       // Superset API and UI routes - Production Superset
       '/api/v1': {

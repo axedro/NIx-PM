@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, BellOff, Trash2, RefreshCw, TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Bell, BellOff, Trash2, RefreshCw, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { alertsService } from '../services/alertsService';
 import type { Alert, AlertTrigger, AlertStatistics } from '../types/alerts';
 import { TIME_WINDOW_LABELS, CHECK_FREQUENCY_LABELS, AGGREGATION_LABELS, COMPARISON_LABELS } from '../types/alerts';

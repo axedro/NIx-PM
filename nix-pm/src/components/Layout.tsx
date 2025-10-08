@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, ChevronLeft, ChevronRight, LayoutDashboard, BarChart3, Bell, User, LogOut, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutDashboard, BarChart3, Bell, User, LogOut, Settings } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supersetService } from '../services/superset';
 
